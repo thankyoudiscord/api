@@ -1,0 +1,6 @@
+*.swp
+*.vim
+
+.env
+
+/birthday-backend
