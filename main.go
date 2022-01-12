@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"strings"
 
@@ -10,23 +11,30 @@ import (
 	"github.com/go-chi/chi/middleware"
 	"github.com/go-redis/redis/v8"
 	"github.com/joho/godotenv"
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 
 	"github.com/thankyoudiscord/api/auth"
+	"github.com/thankyoudiscord/api/database"
 	"github.com/thankyoudiscord/api/routes"
 )
-
-const SESSION_ID_COOKIE = "session_id"
 
 var (
 	redisClient *redis.Client
 
-	ADDR          string
-	CLIENT_ID     string
-	CLIENT_SECRET string
-	REDIRECT_URI  string
-	JWT_SECRET    string
-	REDIS_HOST    string
-	REDIS_PORT    string
+	ADDR,
+	CLIENT_ID,
+	CLIENT_SECRET,
+	REDIRECT_URI,
+	JWT_SECRET,
+	REDIS_HOST,
+	REDIS_PORT,
+	POSTGRES_HOST,
+	POSTGRES_PORT,
+	POSTGRES_USER,
+	POSTGRES_PASS,
+	POSTGRES_DB string
 
 	REQUIRED_ENV = []string{
 		"ADDR",
@@ -35,6 +43,11 @@ var (
 		"REDIRECT_URI",
 		"REDIS_HOST",
 		"REDIS_PORT",
+		"POSTGRES_HOST",
+		"POSTGRES_PORT",
+		"POSTGRES_USER",
+		"POSTGRES_PASS",
+		"POSTGRES_DB",
 	}
 )
 
@@ -49,6 +62,11 @@ func init() {
 	REDIRECT_URI = os.Getenv("REDIRECT_URI")
 	REDIS_HOST = os.Getenv("REDIS_HOST")
 	REDIS_PORT = os.Getenv("REDIS_PORT")
+	POSTGRES_HOST = os.Getenv("POSTGRES_HOST")
+	POSTGRES_PORT = os.Getenv("POSTGRES_PORT")
+	POSTGRES_USER = os.Getenv("POSTGRES_USER")
+	POSTGRES_PASS = os.Getenv("POSTGRES_PASS")
+	POSTGRES_DB = os.Getenv("POSTGRES_DB")
 
 	missing := checkenv(REQUIRED_ENV)
 
@@ -62,16 +80,36 @@ func init() {
 	redisClient = redis.NewClient(&redis.Options{
 		Addr: REDIS_HOST + ":" + REDIS_PORT,
 	})
-
 	auth.InitAuthManager(redisClient)
+
+	pgConnUrl := url.URL{
+		User:   url.UserPassword(POSTGRES_USER, POSTGRES_PASS),
+		Scheme: "postgres",
+		Host:   POSTGRES_HOST + ":" + POSTGRES_PORT,
+		Path:   POSTGRES_DB,
+		RawQuery: url.Values{
+			"sslmode":  {"disable"},
+			"TimeZone": {"America/New_York"},
+		}.Encode(),
+	}
+
+	d, err := gorm.Open(postgres.Open(pgConnUrl.String()), &gorm.Config{
+		Logger: logger.Default.LogMode(logger.Silent),
+	})
+	if err != nil {
+		log.Fatalf("failed to connect to postgres: %v\n", err)
+	}
+
+	database.InitDatabase(d)
 }
 
 func main() {
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
 
-	r.Mount("/api", routes.AuthRoutes{}.Routes())
-	r.Mount("/api/users", routes.UserRoutes{}.Routes())
+	r.Mount("/", routes.AuthRoutes{}.Routes())
+	r.Mount("/banner", routes.BannerRoutes{}.Routes())
+	r.Mount("/users", routes.UserRoutes{}.Routes())
 
 	if err := http.ListenAndServe(ADDR, r); err != nil {
 		log.Fatalf("failed to start server: %v\n", err)

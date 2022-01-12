@@ -12,6 +12,8 @@ import (
 	"github.com/go-chi/chi"
 	"github.com/joho/godotenv"
 	"github.com/thankyoudiscord/api/auth"
+	"github.com/thankyoudiscord/api/database"
+	"github.com/thankyoudiscord/api/models"
 	"golang.org/x/oauth2"
 )
 
@@ -75,15 +77,42 @@ func (ar AuthRoutes) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	userData, err := models.GetUser(tok.AccessToken)
+	if err != nil {
+		fmt.Printf("failed to get user from discord: %v\n", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
 	mgr := auth.GetManager()
 
 	sID, err := mgr.CreateSession(auth.Session{
 		AccessToken:  tok.AccessToken,
 		RefreshToken: tok.RefreshToken,
+		UserID:       userData.ID,
 	})
 
 	if err != nil {
 		fmt.Println("failed to save session in redis:", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	dbUser := database.User{
+		UserID:        userData.ID,
+		Username:      userData.Username,
+		Discriminator: userData.Username,
+		AvatarHash:    userData.Avatar,
+	}
+
+	db := database.GetDatabase()
+	res := db.Model(&dbUser).Where("user_id = ?", dbUser.UserID).Updates(&dbUser)
+	if res.RowsAffected == 0 {
+		res = db.Create(&dbUser)
+	}
+
+	if res.Error != nil {
+		fmt.Printf("failed to update user data in database: %v\n", res.Error)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}

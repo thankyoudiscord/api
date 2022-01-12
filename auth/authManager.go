@@ -24,15 +24,13 @@ type AuthManager struct {
 type Session struct {
 	RefreshToken string `json:"refresh_token"`
 	AccessToken  string `json:"access_token"`
+	UserID       string `json:"user_id"`
 }
 
 func (m AuthManager) CreateSession(s Session) (string, error) {
-	ctx := context.Background()
-
 	sessionId := uuid.New().String()
 
 	var sess bytes.Buffer
-
 	enc := gob.NewEncoder(&sess)
 
 	err := enc.Encode(s)
@@ -41,7 +39,7 @@ func (m AuthManager) CreateSession(s Session) (string, error) {
 		return "", err
 	}
 
-	status := m.RedisClient.SetEX(ctx, sessionId, sess.Bytes(), SESSION_TTL)
+	status := m.RedisClient.SetEX(context.Background(), sessionId, sess.Bytes(), SESSION_TTL)
 	if status.Err() != nil {
 		return "", status.Err()
 	}
