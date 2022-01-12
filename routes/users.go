@@ -26,7 +26,7 @@ func (ur UserRoutes) Routes() chi.Router {
 type (
 	GetUserPayloadSignature struct {
 		HasSigned     bool    `json:"has_signed"`
-		Position      int64   `json:"position"`
+		Position      *int64  `json:"position"`
 		ReferralCount int64   `json:"referral_count"`
 		ReferredBy    *string `json:"referred_by"`
 	}
@@ -77,6 +77,11 @@ func getSelf(w http.ResponseWriter, r *http.Request) {
 			ReferralCount: count,
 			ReferredBy:    sig.ReferrerID,
 		},
+	}
+
+	position, _ := database.GetUserPosition(db, userId)
+	if position != 0 {
+		pl.Signature.Position = &position
 	}
 
 	b, err := json.Marshal(pl)
