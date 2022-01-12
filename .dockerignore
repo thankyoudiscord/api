@@ -6,4 +6,6 @@
 
 !*.go
 !/auth/*.go
+!/database/*.go
+!/models/*.go
 !/routes/*.go

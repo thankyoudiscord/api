@@ -1,0 +1,40 @@
+version: '3.9'
+
+services:
+  api:
+    build: '.'
+    ports:
+      - '3000:3000'
+    depends_on:
+      - 'redis'
+      - 'postgres'
+    volumes:
+      - './.env:/.env'
+    deploy:
+      restart_policy:
+        condition: 'on-failure'
+
+  postgres:
+    command: 'postgres -c listen_addresses="*"'
+    image: 'postgres:14'
+    environment:
+      POSTGRES_USER: 'thankyoudiscord'
+      POSTGRES_PASSWORD: 'thankyoudiscord'
+      POSTGRES_DB: 'thankyoudiscord'
+    volumes:
+      - 'postgres_data:/var/lib/postgres/data'
+    deploy:
+      restart_policy:
+        condition: 'on-failure'
+
+  redis:
+    image: 'redis'
+    volumes:
+      - 'redis_data:/data'
+    deploy:
+      restart_policy:
+        condition: 'on-failure'
+
+volumes:
+  postgres_data:
+  redis_data:

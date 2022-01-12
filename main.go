@@ -33,7 +33,7 @@ var (
 	POSTGRES_HOST,
 	POSTGRES_PORT,
 	POSTGRES_USER,
-	POSTGRES_PASS,
+	POSTGRES_PASSWORD,
 	POSTGRES_DB string
 
 	REQUIRED_ENV = []string{
@@ -46,7 +46,7 @@ var (
 		"POSTGRES_HOST",
 		"POSTGRES_PORT",
 		"POSTGRES_USER",
-		"POSTGRES_PASS",
+		"POSTGRES_PASSWORD",
 		"POSTGRES_DB",
 	}
 )
@@ -65,7 +65,7 @@ func init() {
 	POSTGRES_HOST = os.Getenv("POSTGRES_HOST")
 	POSTGRES_PORT = os.Getenv("POSTGRES_PORT")
 	POSTGRES_USER = os.Getenv("POSTGRES_USER")
-	POSTGRES_PASS = os.Getenv("POSTGRES_PASS")
+	POSTGRES_PASSWORD = os.Getenv("POSTGRES_PASSWORD")
 	POSTGRES_DB = os.Getenv("POSTGRES_DB")
 
 	missing := checkenv(REQUIRED_ENV)
@@ -83,7 +83,7 @@ func init() {
 	auth.InitAuthManager(redisClient)
 
 	pgConnUrl := url.URL{
-		User:   url.UserPassword(POSTGRES_USER, POSTGRES_PASS),
+		User:   url.UserPassword(POSTGRES_USER, POSTGRES_PASSWORD),
 		Scheme: "postgres",
 		Host:   POSTGRES_HOST + ":" + POSTGRES_PORT,
 		Path:   POSTGRES_DB,
