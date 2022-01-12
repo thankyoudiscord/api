@@ -7,9 +7,9 @@ build: $(OUTPUT)
 
 .PHONY: clean
 clean:
-	go clean
-	rm -f $(OUTPUT)
+	@go clean
+	@rm -f $(OUTPUT)
 
 .PHONY: dev
 dev:
-	go run *.go
+	@go run *.go
