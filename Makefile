@@ -1,6 +1,6 @@
 OUTPUT := birthday-backend
 
-$(OUTPUT): *.go
+$(OUTPUT): deps $(wildcard */*.go)
 	go build -o $(OUTPUT) *.go
 
 build: $(OUTPUT)
@@ -9,6 +9,10 @@ build: $(OUTPUT)
 clean:
 	@go clean
 	@rm -f $(OUTPUT)
+
+.PHONY: deps
+deps: go.mod
+	go get
 
 .PHONY: dev
 dev:

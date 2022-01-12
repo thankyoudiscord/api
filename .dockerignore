@@ -1,0 +1,9 @@
+*
+
+!/Makefile
+!/go.mod
+!/go.sum
+
+!*.go
+!/auth/*.go
+!/routes/*.go
