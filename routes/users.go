@@ -18,7 +18,7 @@ func (ur UserRoutes) Routes() chi.Router {
 	r := chi.NewRouter()
 	r.Use(auth.RequireAuth)
 
-	r.Get("/@me", getSelf)
+	r.Get("/@me", ur.GetSelf)
 
 	return r
 }
@@ -37,7 +37,7 @@ type (
 	}
 )
 
-func getSelf(w http.ResponseWriter, r *http.Request) {
+func (ur UserRoutes) GetSelf(w http.ResponseWriter, r *http.Request) {
 	session := r.Context().Value("session").(*auth.Session)
 	userId := session.UserID
 

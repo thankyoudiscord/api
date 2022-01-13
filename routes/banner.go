@@ -21,13 +21,13 @@ func (br BannerRoutes) Routes() chi.Router {
 	r.Group(func(r chi.Router) {
 		r.Use(auth.RequireAuth)
 
-		r.Post("/sign", SignBanner)
+		r.Post("/sign", br.SignBanner)
 	})
 
 	return r
 }
 
-func SignBanner(w http.ResponseWriter, r *http.Request) {
+func (br BannerRoutes) SignBanner(w http.ResponseWriter, r *http.Request) {
 	session := r.Context().Value("session").(*auth.Session)
 	userId := session.UserID
 

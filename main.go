@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"log"
 	"net/http"
 	"net/url"
@@ -108,8 +109,33 @@ func main() {
 	r.Use(middleware.Logger)
 
 	r.Mount("/", routes.AuthRoutes{}.Routes())
+
 	r.Mount("/banner", routes.BannerRoutes{}.Routes())
 	r.Mount("/users", routes.UserRoutes{}.Routes())
+
+	r.Get("/stats", func(w http.ResponseWriter, r *http.Request) {
+		db := database.GetDatabase()
+
+		var count int64
+
+		res := db.Model(&database.Signature{}).Count(&count)
+		if res.Error != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		resp := map[string]int64{
+			"signatures": count,
+		}
+
+		bytes, err := json.Marshal(resp)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		w.Write(bytes)
+	})
 
 	if err := http.ListenAndServe(ADDR, r); err != nil {
 		log.Fatalf("failed to start server: %v\n", err)
