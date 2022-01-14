@@ -41,7 +41,7 @@ func (ar AuthRoutes) Routes() chi.Router {
 
 	r.Post("/login", ar.Login)
 	r.Group(func(r chi.Router) {
-		r.Use(auth.RequireAuth)
+		r.Use(auth.Authenticated)
 		r.Post("/logout", ar.Logout)
 	})
 

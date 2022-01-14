@@ -6,7 +6,7 @@ import (
 	"net/http"
 )
 
-func RequireAuth(next http.Handler) http.Handler {
+func Authenticated(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		c, err := r.Cookie("session_id")
 		if err != nil {
@@ -25,6 +25,7 @@ func RequireAuth(next http.Handler) http.Handler {
 		if err != nil {
 			fmt.Println("failed to get session:", err)
 			w.WriteHeader(http.StatusInternalServerError)
+			return
 		}
 
 		if session == nil {

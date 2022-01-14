@@ -16,7 +16,7 @@ type UserRoutes struct{}
 
 func (ur UserRoutes) Routes() chi.Router {
 	r := chi.NewRouter()
-	r.Use(auth.RequireAuth)
+	r.Use(auth.Authenticated)
 
 	r.Get("/@me", ur.GetSelf)
 
@@ -57,7 +57,6 @@ func (ur UserRoutes) GetSelf(w http.ResponseWriter, r *http.Request) {
 		if res.Error == gorm.ErrRecordNotFound {
 			hasSigned = false
 		} else {
-
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}

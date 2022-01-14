@@ -3,6 +3,7 @@ package routes
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"regexp"
 
@@ -19,9 +20,10 @@ func (br BannerRoutes) Routes() chi.Router {
 	r := chi.NewRouter()
 
 	r.Group(func(r chi.Router) {
-		r.Use(auth.RequireAuth)
+		r.Use(auth.Authenticated)
 
 		r.Post("/sign", br.SignBanner)
+		r.Delete("/sign", br.UnsignBanner)
 	})
 
 	return r
@@ -72,4 +74,18 @@ func (br BannerRoutes) SignBanner(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Add("Content-Type", "application/json")
 	w.Write(bytes)
+}
+
+func (br BannerRoutes) UnsignBanner(w http.ResponseWriter, r *http.Request) {
+	session := r.Context().Value("session").(*auth.Session)
+	userId := session.UserID
+
+	db := database.GetDatabase()
+
+	res := db.Where("user_id = ?", userId).Unscoped().Delete(&database.Signature{})
+	if res.Error != nil {
+		fmt.Printf("failed to delete from database: %v\n", res.Error)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 }
