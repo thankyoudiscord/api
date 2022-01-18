@@ -101,7 +101,7 @@ func (ar AuthRoutes) Login(w http.ResponseWriter, r *http.Request) {
 	dbUser := database.User{
 		UserID:        userData.ID,
 		Username:      userData.Username,
-		Discriminator: userData.Username,
+		Discriminator: userData.Discriminator,
 		AvatarHash:    userData.Avatar,
 	}
 

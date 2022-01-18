@@ -33,7 +33,7 @@ func GetUserPosition(db *gorm.DB, userId string) (int64, error) {
 		    RANK() OVER (
 		      ORDER BY COUNT(referrer_id) DESC
 		    )
-		    from signatures
+		    FROM signatures
 		    GROUP BY referrer_id
 		)
 		AS ranked
