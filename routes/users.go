@@ -26,9 +26,9 @@ func (ur UserRoutes) Routes() chi.Router {
 type (
 	GetUserPayloadSignature struct {
 		HasSigned     bool    `json:"has_signed"`
-		Position      *int64  `json:"position"`
-		ReferralCount int64   `json:"referral_count"`
-		ReferredBy    *string `json:"referred_by"`
+		Position      *int64  `json:"position,omitempty"`
+		ReferralCount int64   `json:"referral_count,omitempty"`
+		ReferredBy    *string `json:"referred_by,omitempty"`
 	}
 
 	GetUserPayload struct {
@@ -49,7 +49,7 @@ func (ur UserRoutes) GetSelf(w http.ResponseWriter, r *http.Request) {
 
 	db := database.GetDatabase()
 
-	hasSigned := true
+	hasSigned := false
 
 	sig := database.Signature{UserID: userId}
 	res := db.First(&sig)
@@ -60,6 +60,11 @@ func (ur UserRoutes) GetSelf(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
+	}
+
+	// TODO: is there a better way to check if the record exists?
+	if !sig.CreatedAt.IsZero() {
+		hasSigned = true
 	}
 
 	var count int64 = 0
