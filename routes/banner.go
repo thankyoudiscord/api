@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"net/http"
 	"regexp"
 
@@ -61,6 +62,8 @@ func (br BannerRoutes) SignBanner(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 		}
+
+		log.Printf("Failed to create signature: %v\n", err)
 
 		w.WriteHeader(http.StatusInternalServerError)
 		return
