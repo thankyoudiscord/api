@@ -22,7 +22,7 @@ func GetDatabase() *gorm.DB {
 
 func GetUserPosition(db *gorm.DB, userId string) (int64, error) {
 	var rank struct {
-		rank int64
+		Rank int64
 	}
 
 	res := db.Raw(`
@@ -43,5 +43,5 @@ func GetUserPosition(db *gorm.DB, userId string) (int64, error) {
 		return 0, res.Error
 	}
 
-	return rank.rank, nil
+	return rank.Rank, nil
 }

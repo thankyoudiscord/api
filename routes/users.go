@@ -84,9 +84,7 @@ func (ur UserRoutes) GetSelf(w http.ResponseWriter, r *http.Request) {
 	}
 
 	position, _ := database.GetUserPosition(db, userId)
-	if position != 0 {
-		pl.Signature.Position = &position
-	}
+	pl.Signature.Position = &position
 
 	b, err := json.Marshal(pl)
 	if err != nil {
