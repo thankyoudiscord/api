@@ -51,8 +51,8 @@ func (ur UserRoutes) GetSelf(w http.ResponseWriter, r *http.Request) {
 
 	hasSigned := false
 
-	sig := database.Signature{UserID: userId}
-	res := db.First(&sig)
+	sig := database.Signature{}
+	res := db.Where("user_id = ?", userId).Find(&sig)
 	if res.Error != nil {
 		if res.Error == gorm.ErrRecordNotFound {
 			hasSigned = false
@@ -68,8 +68,8 @@ func (ur UserRoutes) GetSelf(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var count int64 = 0
-	res = db.Model(&database.Signature{}).Where("referrer_id = ?", userId).Count(&count)
-	if res.Error != nil {
+	re := db.Model(&database.Signature{}).Where("referrer_id = ?", userId).Count(&count)
+	if re.Error != nil {
 		fmt.Printf("failed to count refs: %v\n", res.Error)
 		count = 0
 	}
@@ -84,7 +84,7 @@ func (ur UserRoutes) GetSelf(w http.ResponseWriter, r *http.Request) {
 	}
 
 	position, _ := database.GetUserPosition(db, userId)
-	pl.Signature.Position = &position
+	pl.Signature.Position = position
 
 	b, err := json.Marshal(pl)
 	if err != nil {
