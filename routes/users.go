@@ -26,9 +26,9 @@ func (ur UserRoutes) Routes() chi.Router {
 type (
 	GetUserPayloadSignature struct {
 		HasSigned     bool    `json:"has_signed"`
-		Position      *int64  `json:"position,omitempty"`
-		ReferralCount int64   `json:"referral_count,omitempty"`
-		ReferredBy    *string `json:"referred_by,omitempty"`
+		Position      *int64  `json:"position"`
+		ReferralCount int64   `json:"referral_count"`
+		ReferredBy    *string `json:"referred_by"`
 	}
 
 	GetUserPayload struct {
