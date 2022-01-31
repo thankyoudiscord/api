@@ -28,16 +28,15 @@ func GetUserPosition(db *gorm.DB, userId string) (int64, error) {
 	res := db.Raw(`
 		SELECT rank
 		FROM (
-		  SELECT
-		    referrer_id,
-		    RANK() OVER (
-		      ORDER BY COUNT(referrer_id) DESC
-		    )
-		    FROM signatures
-		    GROUP BY referrer_id
+			SELECT
+				user_id,
+				ROW_NUMBER() OVER (
+					ORDER BY created_at
+				) AS rank
+			FROM signatures
 		)
 		AS ranked
-		WHERE ranked.referrer_id = ?
+		WHERE user_id = ?
 	`, userId).Scan(&rank)
 
 	if res.Error != nil {
