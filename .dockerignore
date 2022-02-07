@@ -4,8 +4,5 @@
 !/go.mod
 !/go.sum
 
-!*.go
-!/auth/*.go
-!/database/*.go
-!/models/*.go
-!/routes/*.go
+!/pkg
+!/cmd
