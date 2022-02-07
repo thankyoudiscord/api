@@ -16,9 +16,9 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 
-	"github.com/thankyoudiscord/api/auth"
-	"github.com/thankyoudiscord/api/database"
-	"github.com/thankyoudiscord/api/routes"
+	"github.com/thankyoudiscord/api/pkg/auth"
+	"github.com/thankyoudiscord/api/pkg/database"
+	"github.com/thankyoudiscord/api/pkg/routes"
 )
 
 var (
@@ -52,7 +52,7 @@ var (
 )
 
 func init() {
-	if err := godotenv.Load("./.env"); err != nil {
+	if err := godotenv.Load(); err != nil {
 		panic(err)
 	}
 

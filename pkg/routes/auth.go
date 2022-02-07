@@ -11,9 +11,9 @@ import (
 
 	"github.com/go-chi/chi"
 	"github.com/joho/godotenv"
-	"github.com/thankyoudiscord/api/auth"
-	"github.com/thankyoudiscord/api/database"
-	"github.com/thankyoudiscord/api/models"
+	"github.com/thankyoudiscord/api/pkg/auth"
+	"github.com/thankyoudiscord/api/pkg/database"
+	"github.com/thankyoudiscord/api/pkg/models"
 	"golang.org/x/oauth2"
 )
 
