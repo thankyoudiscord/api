@@ -1,19 +1,28 @@
 package routes
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
+	"os"
 	"regexp"
 
 	"github.com/go-chi/chi"
 	"github.com/jackc/pgconn"
+	"github.com/joho/godotenv"
 	"github.com/thankyoudiscord/api/pkg/auth"
 	"github.com/thankyoudiscord/api/pkg/database"
 	"github.com/thankyoudiscord/api/pkg/models"
 )
+
+func init() {
+	// TODO: is it okay to call this in every file?
+	godotenv.Load()
+}
 
 type BannerRoutes struct{}
 
@@ -42,14 +51,32 @@ func (br BannerRoutes) SignBanner(w http.ResponseWriter, r *http.Request) {
 	body := make(map[string]interface{})
 	err := json.NewDecoder(r.Body).Decode(&body)
 
-	if err == nil {
-		ref, ok := body["referrer"].(string)
-		if ok {
-			matches, err := regexp.Match(`^\d{16,20}$`, []byte(ref))
-			if err == nil && matches {
-				sig.ReferrerID = &ref
-			}
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write(models.CreateError("Failed to parse JSON payload"))
+		return
+	}
+
+	ref, ok := body["referrer"].(string)
+	if ok {
+		matches, err := regexp.Match(`^\d{16,20}$`, []byte(ref))
+		if err == nil && matches {
+			sig.ReferrerID = &ref
 		}
+	}
+
+	solution, ok := body["captchaSolution"].(string)
+	if !ok {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write(models.CreateError("Failed to read capcha solution from payload"))
+		return
+	}
+
+	captchaVerified := verifyCaptcha(solution)
+	if !captchaVerified {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write(models.CreateError("Captcha verification failed"))
+		return
 	}
 
 	res := db.Create(&sig)
@@ -63,7 +90,7 @@ func (br BannerRoutes) SignBanner(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
-		log.Printf("Failed to create signature: %v\n", err)
+		log.Printf("Failed to create signature: %v\n", res.Error)
 
 		w.WriteHeader(http.StatusInternalServerError)
 		return
@@ -91,4 +118,51 @@ func (br BannerRoutes) UnsignBanner(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
+}
+
+func verifyCaptcha(sol string) bool {
+	secret := os.Getenv("FRIENDLY_CAPTCHA_SECRET")
+	verifyUrl := os.Getenv("FRIENDLY_CAPTCHA_VERIFY_URL")
+
+	payload := struct {
+		Solution string `json:"solution"`
+		Secret   string `json:"secret"`
+	}{
+		Solution: sol,
+		Secret:   secret,
+	}
+
+	pl, err := json.Marshal(payload)
+	if err != nil {
+		fmt.Println("failed to serialize json payload for captcha verification:", err)
+		return false
+	}
+
+	req, _ := http.NewRequest("POST", verifyUrl, bytes.NewBuffer(pl))
+	req.Header.Add("content-type", "application/json")
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		fmt.Printf("failed to verify captcha solution: %v\n", err)
+		return false
+	}
+
+	bdy, _ := io.ReadAll(resp.Body)
+
+	var body struct {
+		Success bool     `json:"success"`
+		Errors  []string `json:"errors"`
+	}
+
+	err = json.Unmarshal(bdy, &body)
+	if err != nil {
+		fmt.Printf("failed to parse JSON response: %v\n", err)
+		return false
+	}
+
+	if body.Success {
+		return true
+	}
+
+	fmt.Printf("friendlycaptcha responded with errors: %v\n", body.Errors)
+	return false
 }
