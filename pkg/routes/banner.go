@@ -69,7 +69,7 @@ func (br BannerRoutes) SignBanner(w http.ResponseWriter, r *http.Request) {
 	}
 
 	solution := body.CaptchaSolution
-	if body.CaptchaSolution != "" {
+	if body.CaptchaSolution == "" {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write(models.CreateError("Failed to read capcha solution from payload"))
 		return
