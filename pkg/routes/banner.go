@@ -48,7 +48,10 @@ func (br BannerRoutes) SignBanner(w http.ResponseWriter, r *http.Request) {
 		UserID: userId,
 	}
 
-	body := make(map[string]interface{})
+	var body struct {
+		Referrer        *string `json:"referrer"`
+		CaptchaSolution string  `json:"captchaSolution"`
+	}
 	err := json.NewDecoder(r.Body).Decode(&body)
 
 	if err != nil {
@@ -57,16 +60,16 @@ func (br BannerRoutes) SignBanner(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ref, ok := body["referrer"].(string)
-	if ok {
-		matches, err := regexp.Match(`^\d{16,20}$`, []byte(ref))
+	ref := body.Referrer
+	if body.Referrer != nil {
+		matches, err := regexp.Match(`^\d{16,20}$`, []byte(*ref))
 		if err == nil && matches {
-			sig.ReferrerID = &ref
+			sig.ReferrerID = ref
 		}
 	}
 
-	solution, ok := body["captchaSolution"].(string)
-	if !ok {
+	solution := body.CaptchaSolution
+	if body.CaptchaSolution != "" {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write(models.CreateError("Failed to read capcha solution from payload"))
 		return

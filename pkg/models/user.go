@@ -2,7 +2,11 @@ package models
 
 import (
 	"encoding/json"
+	"fmt"
+	"io/ioutil"
 	"net/http"
+
+	tyderrors "github.com/thankyoudiscord/api/pkg/errors"
 )
 
 type DiscordUser struct {
@@ -31,6 +35,17 @@ func GetUser(at string) (*DiscordUser, error) {
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return nil, err
+	}
+
+	if res.StatusCode != 200 {
+		bdy, _ := ioutil.ReadAll(res.Body)
+		fmt.Println("discord responded with non-200 status code:", res.StatusCode, string(bdy))
+
+		if res.StatusCode == http.StatusUnauthorized {
+			return nil, tyderrors.DiscordAPIUnauthorized
+		}
+
+		return nil, tyderrors.DiscordAPIError
 	}
 
 	var user DiscordUser
