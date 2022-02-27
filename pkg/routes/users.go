@@ -6,10 +6,11 @@ import (
 	"net/http"
 
 	"github.com/go-chi/chi"
+	"gorm.io/gorm"
+
 	"github.com/thankyoudiscord/api/pkg/auth"
 	"github.com/thankyoudiscord/api/pkg/database"
 	"github.com/thankyoudiscord/api/pkg/models"
-	"gorm.io/gorm"
 )
 
 type UserRoutes struct{}
@@ -41,8 +42,9 @@ func (ur UserRoutes) GetSelf(w http.ResponseWriter, r *http.Request) {
 	session := r.Context().Value("session").(*auth.Session)
 	userId := session.UserID
 
-	data, err := models.GetUser(session.AccessToken)
-	if err != nil {
+	data, ok := r.Context().Value("user").(*models.DiscordUser)
+	if !ok {
+		fmt.Println("failed to read \"user\" from request context")
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}

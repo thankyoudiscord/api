@@ -2,8 +2,12 @@ package auth
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
+
+	tyderrors "github.com/thankyoudiscord/api/pkg/errors"
+	"github.com/thankyoudiscord/api/pkg/models"
 )
 
 func Authenticated(next http.Handler) http.Handler {
@@ -33,9 +37,24 @@ func Authenticated(next http.Handler) http.Handler {
 			return
 		}
 
+		// TODO: is there a better way to check if the application was revoked?
+		user, err := models.GetUser(session.AccessToken)
+		if err != nil {
+			// The oauth token was revoked, so force the user to logout and delete the session
+			if errors.Is(err, tyderrors.DiscordAPIUnauthorized) {
+				mgr.DeleteSession(sessionId)
+				w.WriteHeader(http.StatusUnauthorized)
+				return
+			}
+
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
 		ctx := r.Context()
 		ctx = context.WithValue(ctx, "session_id", sessionId)
 		ctx = context.WithValue(ctx, "session", session)
+		ctx = context.WithValue(ctx, "user", user)
 
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
