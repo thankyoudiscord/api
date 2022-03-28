@@ -25,7 +25,7 @@ func Authenticated(next http.Handler) http.Handler {
 
 		sessionId := c.Value
 
-		session, err := mgr.GetSession(sessionId)
+		session, err := mgrSingleton.GetSession(sessionId)
 		if err != nil {
 			fmt.Println("failed to get session:", err)
 			w.WriteHeader(http.StatusInternalServerError)
@@ -42,7 +42,7 @@ func Authenticated(next http.Handler) http.Handler {
 		if err != nil {
 			// The oauth token was revoked, so force the user to logout and delete the session
 			if errors.Is(err, tyderrors.DiscordAPIUnauthorized) {
-				mgr.DeleteSession(sessionId)
+				mgrSingleton.DeleteSession(sessionId)
 				w.WriteHeader(http.StatusUnauthorized)
 				return
 			}
