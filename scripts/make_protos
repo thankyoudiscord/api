@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+
+ROOT="$(dirname "$0")/.."
+
+GO_OUT="$ROOT"
+GO_OUT_DIR="$ROOT/pkg/protos"
+
+if [[ ! -d "$GO_OUT_DIR" ]]; then
+  mkdir -p "$GO_OUT_DIR"
+fi
+
+protoc \
+  -I="$ROOT/protos" \
+  --go_out="$GO_OUT" \
+  --go-grpc_out="$GO_OUT" \
+  $ROOT/protos/*.proto

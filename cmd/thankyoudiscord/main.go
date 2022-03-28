@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 	"net/url"
@@ -12,12 +13,15 @@ import (
 	"github.com/go-chi/chi/middleware"
 	"github.com/go-redis/redis/v8"
 	"github.com/joho/godotenv"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 
 	"github.com/thankyoudiscord/api/pkg/auth"
 	"github.com/thankyoudiscord/api/pkg/database"
+	"github.com/thankyoudiscord/api/pkg/protos"
 	"github.com/thankyoudiscord/api/pkg/routes"
 )
 
@@ -34,7 +38,8 @@ var (
 	POSTGRES_PORT,
 	POSTGRES_USER,
 	POSTGRES_PASSWORD,
-	POSTGRES_DB string
+	POSTGRES_DB,
+	BANNER_GRPC_ADDR string
 
 	REQUIRED_ENV = []string{
 		"ADDR",
@@ -48,6 +53,7 @@ var (
 		"POSTGRES_USER",
 		"POSTGRES_PASSWORD",
 		"POSTGRES_DB",
+		"BANNER_GRPC_ADDR",
 	}
 )
 
@@ -67,6 +73,7 @@ func init() {
 	POSTGRES_USER = os.Getenv("POSTGRES_USER")
 	POSTGRES_PASSWORD = os.Getenv("POSTGRES_PASSWORD")
 	POSTGRES_DB = os.Getenv("POSTGRES_DB")
+	BANNER_GRPC_ADDR = os.Getenv("BANNER_GRPC_ADDR")
 
 	missing := checkenv(REQUIRED_ENV)
 
@@ -104,12 +111,23 @@ func init() {
 }
 
 func main() {
+	bannerGRPCConn, err := grpc.Dial(
+		BANNER_GRPC_ADDR,
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+	)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "failed to dial banner grpc server: %v\n", err)
+		os.Exit(1)
+	}
+
+	bannerGenClient := protos.NewBannerClient(bannerGRPCConn)
+
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
 
 	r.Mount("/", routes.AuthRoutes{}.Routes())
 
-	r.Mount("/banner", routes.BannerRoutes{}.Routes())
+	r.Mount("/banner", routes.NewBannerRoutes(bannerGenClient).Routes())
 	r.Mount("/users", routes.UserRoutes{}.Routes())
 
 	r.Get("/stats", func(w http.ResponseWriter, r *http.Request) {

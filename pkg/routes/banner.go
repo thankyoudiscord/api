@@ -2,6 +2,7 @@ package routes
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -17,6 +18,7 @@ import (
 	"github.com/thankyoudiscord/api/pkg/auth"
 	"github.com/thankyoudiscord/api/pkg/database"
 	"github.com/thankyoudiscord/api/pkg/models"
+	"github.com/thankyoudiscord/api/pkg/protos"
 )
 
 func init() {
@@ -24,7 +26,15 @@ func init() {
 	godotenv.Load()
 }
 
-type BannerRoutes struct{}
+type BannerRoutes struct {
+	bannerGenClient protos.BannerClient
+}
+
+func NewBannerRoutes(bannerGenClient protos.BannerClient) *BannerRoutes {
+	return &BannerRoutes{
+		bannerGenClient: bannerGenClient,
+	}
+}
 
 func (br BannerRoutes) Routes() chi.Router {
 	r := chi.NewRouter()
@@ -35,6 +45,8 @@ func (br BannerRoutes) Routes() chi.Router {
 		r.Post("/sign", br.SignBanner)
 		r.Delete("/sign", br.UnsignBanner)
 	})
+
+	r.Get("/image.png", br.GenerateBanner)
 
 	return r
 }
@@ -168,4 +180,20 @@ func verifyCaptcha(sol string) bool {
 
 	fmt.Printf("friendlycaptcha responded with errors: %v\n", body.Errors)
 	return false
+}
+
+func (br BannerRoutes) GenerateBanner(w http.ResponseWriter, r *http.Request) {
+	banner, err := br.bannerGenClient.GenerateBanner(
+		context.Background(),
+		&protos.CreateBannerRequest{},
+	)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "failed to generate banner: %v\n", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	w.Write(banner.GetImage())
+	w.Header().Add("Content-Type", "image/png")
+	return
 }
