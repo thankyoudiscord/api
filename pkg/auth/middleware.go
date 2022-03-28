@@ -47,6 +47,7 @@ func Authenticated(next http.Handler) http.Handler {
 				return
 			}
 
+			fmt.Printf("failed to get user from discord: %v\n", err)
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
