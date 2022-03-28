@@ -15,7 +15,7 @@ import (
 const SESSION_ID_COOKIE = "session_id"
 const SESSION_TTL = time.Hour * 24 * 7
 
-var mgr AuthManager
+var mgrSingleton AuthManager
 
 type AuthManager struct {
 	RedisClient *redis.Client
@@ -85,12 +85,12 @@ var initOnce sync.Once
 
 func InitAuthManager(r *redis.Client) {
 	initOnce.Do(func() {
-		mgr = AuthManager{
+		mgrSingleton = AuthManager{
 			RedisClient: r,
 		}
 	})
 }
 
 func GetManager() AuthManager {
-	return mgr
+	return mgrSingleton
 }

@@ -20,6 +20,7 @@ import (
 	"gorm.io/gorm/logger"
 
 	"github.com/thankyoudiscord/api/pkg/auth"
+	"github.com/thankyoudiscord/api/pkg/cache"
 	"github.com/thankyoudiscord/api/pkg/database"
 	"github.com/thankyoudiscord/api/pkg/protos"
 	"github.com/thankyoudiscord/api/pkg/routes"
@@ -88,6 +89,7 @@ func init() {
 		Addr: REDIS_HOST + ":" + REDIS_PORT,
 	})
 	auth.InitAuthManager(redisClient)
+	cache.InitBannerCache(redisClient)
 
 	pgConnUrl := url.URL{
 		User:   url.UserPassword(POSTGRES_USER, POSTGRES_PASSWORD),

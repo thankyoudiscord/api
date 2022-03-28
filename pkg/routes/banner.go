@@ -16,6 +16,7 @@ import (
 	"github.com/jackc/pgconn"
 	"github.com/joho/godotenv"
 	"github.com/thankyoudiscord/api/pkg/auth"
+	"github.com/thankyoudiscord/api/pkg/cache"
 	"github.com/thankyoudiscord/api/pkg/database"
 	"github.com/thankyoudiscord/api/pkg/models"
 	"github.com/thankyoudiscord/api/pkg/protos"
@@ -183,6 +184,22 @@ func verifyCaptcha(sol string) bool {
 }
 
 func (br BannerRoutes) GenerateBanner(w http.ResponseWriter, r *http.Request) {
+	bannerCache := cache.GetBannerCache()
+
+	b, err := bannerCache.Get()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "failed to read banner image from cache: %v\n", err)
+	}
+
+	if b != nil {
+		img := b.GetImage()
+		if b != nil && img != nil {
+			w.Header().Add("Content-Type", "image/png")
+			w.Write(img)
+			return
+		}
+	}
+
 	banner, err := br.bannerGenClient.GenerateBanner(
 		context.Background(),
 		&protos.CreateBannerRequest{},
@@ -191,6 +208,11 @@ func (br BannerRoutes) GenerateBanner(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(os.Stderr, "failed to generate banner: %v\n", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
+	}
+
+	err = bannerCache.Set(banner)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "banner cache set failed. image may not be cached: %v\n", err)
 	}
 
 	w.Write(banner.GetImage())
