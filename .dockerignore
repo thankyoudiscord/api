@@ -3,6 +3,8 @@
 !/Makefile
 !/go.mod
 !/go.sum
+!/.gitmodules
+!/.git
 
 !/pkg
 !/cmd
