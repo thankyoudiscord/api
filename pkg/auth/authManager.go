@@ -27,34 +27,41 @@ type Session struct {
 	UserID       string `json:"user_id"`
 }
 
+func sessionRedisKey(sessionID string) string {
+	return "session:" + sessionID
+}
+
 func (m AuthManager) CreateSession(s Session) (string, error) {
-	sessionId := uuid.New().String()
+	sessionID := uuid.New().String()
 
 	var sess bytes.Buffer
 	enc := gob.NewEncoder(&sess)
 
 	err := enc.Encode(s)
 	if err != nil {
-		fmt.Printf("failed to encode session data for id=%v: %v\n", sessionId, err)
+		fmt.Printf("failed to encode session data for id=%v: %v\n", sessionID, err)
 		return "", err
 	}
 
-	status := m.RedisClient.SetEX(context.Background(), sessionId, sess.Bytes(), SESSION_TTL)
+	key := sessionRedisKey(sessionID)
+	status := m.RedisClient.SetEX(context.Background(), key, sess.Bytes(), SESSION_TTL)
 	if status.Err() != nil {
 		return "", status.Err()
 	}
 
-	return sessionId, nil
+	return sessionID, nil
 }
 
 func (m AuthManager) DeleteSession(id string) error {
-	res := m.RedisClient.Del(context.Background(), id)
+	key := sessionRedisKey(id)
+	res := m.RedisClient.Del(context.Background(), key)
 
 	return res.Err()
 }
 
 func (m AuthManager) GetSession(id string) (*Session, error) {
-	res := m.RedisClient.Get(context.Background(), id)
+	key := sessionRedisKey(id)
+	res := m.RedisClient.Get(context.Background(), key)
 	if res.Err() != nil {
 		if res.Err() == redis.Nil {
 			return nil, nil
