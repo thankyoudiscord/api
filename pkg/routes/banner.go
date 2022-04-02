@@ -11,8 +11,10 @@ import (
 	"net/http"
 	"os"
 	"regexp"
+	"time"
 
 	"github.com/go-chi/chi"
+	"github.com/go-chi/httprate"
 	"github.com/jackc/pgconn"
 	"github.com/joho/godotenv"
 	"github.com/thankyoudiscord/api/pkg/auth"
@@ -43,7 +45,18 @@ func (br BannerRoutes) Routes() chi.Router {
 	r.Group(func(r chi.Router) {
 		r.Use(auth.Authenticated)
 
-		r.Post("/sign", br.SignBanner)
+		r.Group(func(r chi.Router) {
+			r.Use(httprate.Limit(2, 5*time.Minute, httprate.WithKeyFuncs(
+				httprate.KeyByEndpoint,
+				func(r *http.Request) (string, error) {
+					var sessionID string
+					sessionID = r.Context().Value("session_id").(string)
+					return sessionID, nil
+				})))
+
+			r.Post("/sign", br.SignBanner)
+		})
+
 		r.Delete("/sign", br.UnsignBanner)
 	})
 
@@ -53,7 +66,8 @@ func (br BannerRoutes) Routes() chi.Router {
 }
 
 func (br BannerRoutes) SignBanner(w http.ResponseWriter, r *http.Request) {
-	session := r.Context().Value("session").(*auth.Session)
+	var session *auth.Session
+	session = r.Context().Value("session").(*auth.Session)
 	userId := session.UserID
 
 	db := database.GetDatabase()
