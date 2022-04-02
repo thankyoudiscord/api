@@ -8,9 +8,11 @@ import (
 	"net/url"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
+	"github.com/go-chi/httprate"
 	"github.com/go-redis/redis/v8"
 	"github.com/joho/godotenv"
 	"google.golang.org/grpc"
@@ -132,6 +134,12 @@ func main() {
 
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
+
+	r.Use(httprate.Limit(
+		15,
+		10*time.Second,
+		httprate.WithKeyFuncs(httprate.KeyByEndpoint, httprate.KeyByIP),
+	))
 
 	r.Mount("/", routes.AuthRoutes{}.Routes())
 
