@@ -26,6 +26,8 @@ import (
 	"github.com/thankyoudiscord/api/pkg/routes"
 )
 
+const DEFAULT_ADDR = ":3000"
+
 var (
 	redisClient *redis.Client
 
@@ -43,7 +45,6 @@ var (
 	BANNER_GRPC_ADDR string
 
 	REQUIRED_ENV = []string{
-		"ADDR",
 		"CLIENT_ID",
 		"CLIENT_SECRET",
 		"REDIRECT_URI",
@@ -63,7 +64,6 @@ func init() {
 		panic(err)
 	}
 
-	ADDR = os.Getenv("ADDR")
 	CLIENT_ID = os.Getenv("CLIENT_ID")
 	CLIENT_SECRET = os.Getenv("CLIENT_SECRET")
 	REDIRECT_URI = os.Getenv("REDIRECT_URI")
@@ -75,6 +75,12 @@ func init() {
 	POSTGRES_PASSWORD = os.Getenv("POSTGRES_PASSWORD")
 	POSTGRES_DB = os.Getenv("POSTGRES_DB")
 	BANNER_GRPC_ADDR = os.Getenv("BANNER_GRPC_ADDR")
+
+	var ok bool
+	ADDR, ok = os.LookupEnv("ADDR")
+	if !ok {
+		ADDR = DEFAULT_ADDR
+	}
 
 	missing := checkenv(REQUIRED_ENV)
 
