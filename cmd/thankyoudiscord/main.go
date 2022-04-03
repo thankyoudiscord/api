@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"github.com/go-chi/chi"
-	"github.com/go-chi/chi/middleware"
 	"github.com/go-chi/cors"
 	"github.com/go-chi/httprate"
 	"github.com/go-redis/redis/v8"
@@ -141,6 +140,21 @@ func main() {
 		httprate.WithKeyFuncs(httprate.KeyByEndpoint, httprate.KeyByIP),
 	))
 
+	ALLOWED_ORIGINS := []string{"*"}
+
+	if os.Getenv("APP_ENV") == "production" {
+		ALLOWED_ORIGINS = []string{
+			"localhost:*",
+			"*.wah.wtf",
+			"*.thankyoudiscord.com",
+		}
+	}
+
+	r.Use(cors.Handler(cors.Options{
+		AllowedOrigins:   ALLOWED_ORIGINS,
+		AllowCredentials: true,
+	}))
+
 	r.Mount("/", routes.AuthRoutes{}.Routes())
 
 	r.Mount("/banner", routes.NewBannerRoutes(bannerGenClient).Routes())
@@ -170,25 +184,7 @@ func main() {
 		w.Write(bytes)
 	})
 
-	apiRouter := chi.NewRouter()
-	apiRouter.Use(middleware.Logger)
-
-	ALLOWED_ORIGINS := []string{"*"}
-
-	if os.Getenv("APP_ENV") == "production" {
-		ALLOWED_ORIGINS = []string{
-			"*.wah.wtf",
-			"*.thankyoudiscord.com",
-		}
-	}
-
-	apiRouter.Use(cors.Handler(cors.Options{
-		AllowedOrigins: ALLOWED_ORIGINS,
-	}))
-
-	apiRouter.Mount("/api", r)
-
-	if err := http.ListenAndServe(ADDR, apiRouter); err != nil {
+	if err := http.ListenAndServe(ADDR, r); err != nil {
 		log.Fatalf("failed to start server: %v\n", err)
 	}
 }

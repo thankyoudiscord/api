@@ -119,7 +119,10 @@ func (ar AuthRoutes) Login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	http.SetCookie(w, &http.Cookie{
-		Name:     auth.SESSION_ID_COOKIE,
+		Name: auth.SESSION_ID_COOKIE,
+		// TODO: is this bad?
+		SameSite: http.SameSiteNoneMode,
+		Secure:   true,
 		Value:    sID,
 		Path:     "/",
 		Expires:  time.Now().Add(auth.SESSION_TTL),
