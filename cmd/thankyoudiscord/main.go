@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/go-chi/chi"
+	"github.com/go-chi/chi/middleware"
 	"github.com/go-chi/cors"
 	"github.com/go-chi/httprate"
 	"github.com/go-redis/redis/v8"
@@ -133,6 +134,7 @@ func main() {
 	bannerGenClient := protos.NewBannerClient(bannerGRPCConn)
 
 	r := chi.NewRouter()
+	r.Use(middleware.Logger)
 
 	r.Use(httprate.Limit(
 		15,
