@@ -207,7 +207,7 @@ func (br BannerRoutes) GenerateBanner(w http.ResponseWriter, r *http.Request) {
 
 	if b != nil {
 		img := b.GetImage()
-		if b != nil && img != nil {
+		if img != nil {
 			w.Header().Add("Content-Type", "image/png")
 			w.Write(img)
 			return
