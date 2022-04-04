@@ -87,26 +87,44 @@ func (br BannerRoutes) SignBanner(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if os.Getenv("APP_ENV") == "production" {
+		solution := body.CaptchaSolution
+		if body.CaptchaSolution == "" {
+			w.WriteHeader(http.StatusBadRequest)
+			w.Write(models.CreateError("Failed to read capcha solution from payload"))
+			return
+		}
+
+		captchaVerified := verifyCaptcha(solution)
+		if !captchaVerified {
+			w.WriteHeader(http.StatusBadRequest)
+			w.Write(models.CreateError("Captcha verification failed"))
+			return
+		}
+	}
+
 	ref := body.Referrer
-	if body.Referrer != nil {
+	if ref != nil && *ref != userId {
 		matches, err := regexp.Match(`^\d{16,20}$`, []byte(*ref))
 		if err == nil && matches {
 			sig.ReferrerID = ref
 		}
 	}
 
-	solution := body.CaptchaSolution
-	if body.CaptchaSolution == "" {
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write(models.CreateError("Failed to read capcha solution from payload"))
-		return
-	}
+	if ref != nil {
+		var count int64
+		db.Raw(`
+			SELECT 1
+			FROM signatures
+			WHERE user_id = ?
+			LIMIT 1
+		`, ref).
+			Count(&count)
 
-	captchaVerified := verifyCaptcha(solution)
-	if !captchaVerified {
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write(models.CreateError("Captcha verification failed"))
-		return
+		fmt.Println("rows:", count)
+		if count == 0 {
+			ref = nil
+		}
 	}
 
 	res := db.Create(&sig)
