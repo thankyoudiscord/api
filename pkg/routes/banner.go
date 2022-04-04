@@ -121,7 +121,6 @@ func (br BannerRoutes) SignBanner(w http.ResponseWriter, r *http.Request) {
 		`, ref).
 			Count(&count)
 
-		fmt.Println("rows:", count)
 		if count == 0 {
 			ref = nil
 		}
