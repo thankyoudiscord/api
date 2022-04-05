@@ -269,7 +269,7 @@ func sendSignatureFeedMessage(user *models.DiscordUser, position int64) {
 
 	postBody := map[string]interface{}{
 		"content": fmt.Sprintf(
-			":pencil: **%s#%s** signed the banner! (**#%s**)",
+			":pencil: **%s#%s** signed the banner! (**#%v**)",
 			user.Username,
 			user.Discriminator,
 			position,
