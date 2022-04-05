@@ -67,7 +67,9 @@ func (br BannerRoutes) Routes() chi.Router {
 
 func (br BannerRoutes) SignBanner(w http.ResponseWriter, r *http.Request) {
 	var session *auth.Session
+	var user *models.DiscordUser
 	session = r.Context().Value("session").(*auth.Session)
+	user = r.Context().Value("user").(*models.DiscordUser)
 	userId := session.UserID
 
 	db := database.GetDatabase()
@@ -148,6 +150,8 @@ func (br BannerRoutes) SignBanner(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
+
+	sendSignatureFeedMessage(user)
 
 	w.Header().Add("Content-Type", "application/json")
 	w.Write(bytes)
@@ -249,4 +253,27 @@ func (br BannerRoutes) GenerateBanner(w http.ResponseWriter, r *http.Request) {
 	w.Write(banner.GetImage())
 	w.Header().Add("Content-Type", "image/png")
 	return
+}
+
+func sendSignatureFeedMessage(user *models.DiscordUser) {
+	webhook, exists := os.LookupEnv("SIGNATURE_FEED_WEBHOOK")
+	if !exists {
+		return
+	}
+
+	postBody := map[string]interface{}{
+		"content": ":pencil: **" + user.Username + "#" + user.Discriminator + "** signed the banner!",
+		"allowed_mentions": map[string]interface{}{
+			"parse": []string{},
+		},
+	}
+
+	j, _ := json.Marshal(&postBody)
+	res, err := http.Post(webhook, "application/json", bytes.NewBuffer(j))
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "failed to post feed message: %v\n", err)
+		return
+	}
+
+	fmt.Println("signature response status:", res.Status)
 }
