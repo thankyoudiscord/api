@@ -152,6 +152,7 @@ func (br BannerRoutes) SignBanner(w http.ResponseWriter, r *http.Request) {
 	}
 
 	sendSignatureFeedMessage(user)
+	addSignatureRoleToUser(user)
 
 	w.Header().Add("Content-Type", "application/json")
 	w.Write(bytes)
@@ -272,6 +273,41 @@ func sendSignatureFeedMessage(user *models.DiscordUser) {
 	_, err := http.Post(webhook, "application/json", bytes.NewBuffer(j))
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "failed to post feed message: %v\n", err)
+		return
+	}
+}
+
+func addSignatureRoleToUser(user *models.DiscordUser) {
+	discordToken, discordTokenExists := os.LookupEnv("DISCORD_TOKEN")
+	signatureRole, signatureRoleExists := os.LookupEnv("SIGNATURE_ROLE")
+	guildID, guildIDExists := os.LookupEnv("SIGNATURE_ROLE_GUILD_ID")
+
+	if !discordTokenExists || !signatureRoleExists || !guildIDExists {
+		return
+	}
+
+	req, err := http.NewRequest(
+		"PUT",
+		fmt.Sprintf(
+			"https://discord.com/api/v10/guilds/%s/members/%s/roles/%s",
+			guildID,
+			user.ID,
+			signatureRole,
+		),
+		nil,
+	)
+
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "failed to create PUT /guilds/:guild/members/:member/roles/:role request: %v\n", err)
+		return
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bot "+discordToken)
+
+	_, err = http.DefaultClient.Do(req)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "failed to add role to user: %v\n", err)
 		return
 	}
 }
