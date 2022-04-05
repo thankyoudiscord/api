@@ -151,7 +151,12 @@ func (br BannerRoutes) SignBanner(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	sendSignatureFeedMessage(user)
+	pos, err := database.GetUserPosition(db, userId)
+	if err != nil {
+		log.Printf("failed to get user position for feed: %v\n", err)
+	}
+
+	sendSignatureFeedMessage(user, pos)
 	addSignatureRoleToUser(user)
 
 	w.Header().Add("Content-Type", "application/json")
@@ -256,14 +261,19 @@ func (br BannerRoutes) GenerateBanner(w http.ResponseWriter, r *http.Request) {
 	return
 }
 
-func sendSignatureFeedMessage(user *models.DiscordUser) {
+func sendSignatureFeedMessage(user *models.DiscordUser, position int64) {
 	webhook, exists := os.LookupEnv("SIGNATURE_FEED_WEBHOOK")
 	if !exists {
 		return
 	}
 
 	postBody := map[string]interface{}{
-		"content": ":pencil: **" + user.Username + "#" + user.Discriminator + "** signed the banner!",
+		"content": fmt.Sprintf(
+			":pencil: **%s#%s** signed the banner! (**#%s**)",
+			user.Username,
+			user.Discriminator,
+			position,
+		),
 		"allowed_mentions": map[string]interface{}{
 			"parse": []string{},
 		},
