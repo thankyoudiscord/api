@@ -269,11 +269,9 @@ func sendSignatureFeedMessage(user *models.DiscordUser) {
 	}
 
 	j, _ := json.Marshal(&postBody)
-	res, err := http.Post(webhook, "application/json", bytes.NewBuffer(j))
+	_, err := http.Post(webhook, "application/json", bytes.NewBuffer(j))
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "failed to post feed message: %v\n", err)
 		return
 	}
-
-	fmt.Println("signature response status:", res.Status)
 }
