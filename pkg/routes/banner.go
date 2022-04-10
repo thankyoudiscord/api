@@ -227,7 +227,7 @@ func verifyCaptcha(sol string) bool {
 func (br BannerRoutes) GenerateBanner(w http.ResponseWriter, r *http.Request) {
 	bannerCache := cache.GetBannerCache()
 
-	b, err := bannerCache.Get()
+	b, shouldRegen, err := bannerCache.Get()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "failed to read banner image from cache: %v\n", err)
 	}
@@ -237,27 +237,35 @@ func (br BannerRoutes) GenerateBanner(w http.ResponseWriter, r *http.Request) {
 		if img != nil {
 			w.Header().Add("Content-Type", "image/png")
 			w.Write(img)
-			return
 		}
 	}
 
-	banner, err := br.bannerGenClient.GenerateBanner(
-		context.Background(),
-		&protos.CreateBannerRequest{},
-	)
-	if err != nil {
+	var regend *protos.CreateBannerResponse
+	var genError error
+
+	if shouldRegen {
+		regend, genError = br.bannerGenClient.GenerateBanner(
+			context.Background(),
+			&protos.CreateBannerRequest{},
+		)
+
+		if regend != nil && genError == nil {
+			bannerCache.Set(regend)
+		}
+	}
+
+	if genError != nil {
 		fmt.Fprintf(os.Stderr, "failed to generate banner: %v\n", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
-	err = bannerCache.Set(banner)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "banner cache set failed. image may not be cached: %v\n", err)
+	if b != nil {
+		return
 	}
 
-	w.Write(banner.GetImage())
 	w.Header().Add("Content-Type", "image/png")
+	w.Write(regend.GetImage())
 	return
 }
 
