@@ -3,7 +3,7 @@ package models
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 
 	tyderrors "github.com/thankyoudiscord/api/pkg/errors"
@@ -38,7 +38,7 @@ func GetUser(at string) (*DiscordUser, error) {
 	}
 
 	if res.StatusCode != 200 {
-		bdy, _ := ioutil.ReadAll(res.Body)
+		bdy, _ := io.ReadAll(res.Body)
 		fmt.Println("discord responded with non-200 status code:", res.StatusCode, string(bdy))
 
 		if res.StatusCode == http.StatusUnauthorized {
