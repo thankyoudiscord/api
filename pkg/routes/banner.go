@@ -9,8 +9,10 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"regexp"
+	"strings"
 	"time"
 
 	"github.com/go-chi/chi"
@@ -178,25 +180,16 @@ func (br BannerRoutes) UnsignBanner(w http.ResponseWriter, r *http.Request) {
 }
 
 func verifyCaptcha(sol string) bool {
-	secret := os.Getenv("FRIENDLY_CAPTCHA_SECRET")
-	verifyUrl := os.Getenv("FRIENDLY_CAPTCHA_VERIFY_URL")
+	secret := os.Getenv("CAPTCHA_SECRET")
+	verifyUrl := os.Getenv("CAPTCHA_VERIFY_URL")
 
-	payload := struct {
-		Solution string `json:"solution"`
-		Secret   string `json:"secret"`
-	}{
-		Solution: sol,
-		Secret:   secret,
-	}
+	pl := url.Values{}
 
-	pl, err := json.Marshal(payload)
-	if err != nil {
-		fmt.Println("failed to serialize json payload for captcha verification:", err)
-		return false
-	}
+	pl.Set("response", sol)
+	pl.Set("secret", secret)
 
-	req, _ := http.NewRequest("POST", verifyUrl, bytes.NewBuffer(pl))
-	req.Header.Add("content-type", "application/json")
+	req, _ := http.NewRequest("POST", verifyUrl, strings.NewReader(pl.Encode()))
+	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		fmt.Printf("failed to verify captcha solution: %v\n", err)
@@ -206,8 +199,8 @@ func verifyCaptcha(sol string) bool {
 	bdy, _ := io.ReadAll(resp.Body)
 
 	var body struct {
-		Success bool     `json:"success"`
-		Errors  []string `json:"errors"`
+		Success    bool     `json:"success"`
+		ErrorCodes []string `json:"error-codes"`
 	}
 
 	err = json.Unmarshal(bdy, &body)
@@ -220,7 +213,7 @@ func verifyCaptcha(sol string) bool {
 		return true
 	}
 
-	fmt.Printf("friendlycaptcha responded with errors: %v\n", body.Errors)
+	fmt.Printf("hcaptcha responded with errors: %v\n", body.ErrorCodes)
 	return false
 }
 
@@ -268,6 +261,10 @@ func (br BannerRoutes) GenerateBanner(w http.ResponseWriter, r *http.Request) {
 	w.Write(regend.GetImage())
 	return
 }
+
+// func startSignatureFeedLoop() {
+// 	signatures := []string{}
+// }
 
 func sendSignatureFeedMessage(user *models.DiscordUser, position int64) {
 	webhook, exists := os.LookupEnv("SIGNATURE_FEED_WEBHOOK")
