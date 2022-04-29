@@ -13,10 +13,8 @@ import (
 	"os"
 	"regexp"
 	"strings"
-	"time"
 
 	"github.com/go-chi/chi"
-	"github.com/go-chi/httprate"
 	"github.com/jackc/pgconn"
 	"github.com/joho/godotenv"
 	"github.com/thankyoudiscord/api/pkg/auth"
@@ -44,23 +42,23 @@ func NewBannerRoutes(bannerGenClient protos.BannerClient) *BannerRoutes {
 func (br BannerRoutes) Routes() chi.Router {
 	r := chi.NewRouter()
 
-	r.Group(func(r chi.Router) {
-		r.Use(auth.Authenticated)
+	// r.Group(func(r chi.Router) {
+	// 	r.Use(auth.Authenticated)
 
-		r.Group(func(r chi.Router) {
-			r.Use(httprate.Limit(2, 5*time.Minute, httprate.WithKeyFuncs(
-				httprate.KeyByEndpoint,
-				func(r *http.Request) (string, error) {
-					var sessionID string
-					sessionID = r.Context().Value("session_id").(string)
-					return sessionID, nil
-				})))
+	// 	r.Group(func(r chi.Router) {
+	// 		r.Use(httprate.Limit(2, 5*time.Minute, httprate.WithKeyFuncs(
+	// 			httprate.KeyByEndpoint,
+	// 			func(r *http.Request) (string, error) {
+	// 				var sessionID string
+	// 				sessionID = r.Context().Value("session_id").(string)
+	// 				return sessionID, nil
+	// 			})))
 
-			r.Post("/sign", br.SignBanner)
-		})
+	// 		// r.Post("/sign", br.SignBanner)
+	// 	})
 
-		r.Delete("/sign", br.UnsignBanner)
-	})
+	// 	// r.Delete("/sign", br.UnsignBanner)
+	// })
 
 	r.Get("/image.png", br.GenerateBanner)
 
